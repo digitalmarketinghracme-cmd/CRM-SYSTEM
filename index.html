@@ -22,7 +22,28 @@ input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border
 #pr{display:none}
 @media(max-width:720px){.app{flex-direction:column}.sb{width:100%;display:flex;overflow-x:auto;padding:6px}.sb h1{display:none}.sb a{white-space:nowrap}.f{grid-template-columns:1fr}}
 @media print{.app,.mo{display:none!important}#pr{display:block;color:#000;background:#fff;font-size:12px}#pr table td,#pr table th{border:1px solid #999;padding:4px;white-space:normal;color:#000}}
-</style><script>/* Standalone mode: browser download instead of the claude.ai downloads capability */
+</style><script>
+/* Download fix: defined first, so the older code below it is skipped */
+window.claude={use:async n=>n==='downloads'?{save:async({filename,data})=>{
+  const ext=(filename.split('.').pop()||'').toLowerCase();
+  const type={pdf:'application/pdf',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',json:'application/json',csv:'text/csv'}[ext]||'application/octet-stream';
+  const b=data instanceof Blob?data:new Blob([data],{type});
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isIOS&&navigator.canShare){
+    try{const f=new File([b],filename,{type:b.type||type});
+      if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:filename});return{status:'shared'}}}
+    catch(e){if(e&&e.name==='AbortError')return{status:'cancelled'}}
+  }
+  const url=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.rel='noopener';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  if(typeof toast==='function')toast('Saved: '+filename+' (check your Downloads folder)');
+  return{status:'saved'}
+}}:null};
+window.addEventListener('unhandledrejection',ev=>{if(typeof toast==='function')toast('Error: '+((ev.reason&&ev.reason.message)||ev.reason))});
+window.addEventListener('error',ev=>{if(typeof toast==='function')toast('Error: '+ev.message)});
+</script><script>/* Standalone mode: browser download instead of the claude.ai downloads capability */
 window.claude=window.claude||{use:async n=>n==='downloads'?{save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);return{status:'saved'}}}:null};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script></head><body>
 <div class="app"><nav class="sb" id="nav"><h1>ACME SWITCHGEARS<small>CRM &amp; ERP</small></h1></nav><main id="m"></main></div><div id="pr"></div><div id="mo"></div>
